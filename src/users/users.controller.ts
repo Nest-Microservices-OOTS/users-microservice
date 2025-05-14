@@ -1,4 +1,4 @@
-import { Controller, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -21,7 +21,7 @@ export class UsersController {
   }
 
   @MessagePattern({ cmd: 'findOneUser' })
-  findOne(@Payload('id', ParseIntPipe) id: number) {
+  findOne(@Payload('id') id: number) {
     return this.usersService.findOne(+id);
   }
 

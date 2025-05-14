@@ -1,13 +1,9 @@
 import { PaginationDto } from './../common/dto/pagination.dto';
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaClient } from 'generated/prisma';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class UsersService extends PrismaClient implements OnModuleInit {
@@ -28,7 +24,7 @@ export class UsersService extends PrismaClient implements OnModuleInit {
     const lastPage = Math.ceil(totalPages / limit);
 
     return {
-      data: this.user.findMany({
+      data: await this.user.findMany({
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -41,12 +37,29 @@ export class UsersService extends PrismaClient implements OnModuleInit {
   }
 
   async findOne(id: number) {
-    const user = await this.user.findFirst({
-      where: { id, estado: 'ACTIVO' },
+    // Validación exhaustiva del ID
+    if (isNaN(id) || !Number.isInteger(id)) {
+      throw new RpcException({
+        message: 'ID de usuario inválido: debe ser un número entero',
+        status: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    console.log(id, typeof id);
+
+    console.log(`Buscando usuario con ID: ${id} (Tipo: ${typeof id})`);
+
+    const user = await this.user.findUnique({
+      where: { id: id },
     });
 
+    console.log(user);
+
     if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new RpcException({
+        message: `User with id ${id} not found`,
+        status: HttpStatus.BAD_REQUEST,
+      });
     }
     return user;
   }
